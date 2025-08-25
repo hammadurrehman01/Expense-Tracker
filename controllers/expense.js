@@ -1,4 +1,6 @@
+import { Types } from "mongoose";
 import { Expenses } from "../models/expense.js";
+import req from "express/lib/request.js";
 
 export const createExpense = async (req, res) => {
   try {
@@ -67,7 +69,7 @@ export const getExpenseByFilter = async (req, res) => {
 
 export const updateExpense = async (req, res) => {
   try {
-    const { title, amount, category, date, note } = req.body;
+    const data = req.body;
 
     const { id } = req.params;
 
@@ -78,10 +80,10 @@ export const updateExpense = async (req, res) => {
         .json({ success: false, message: "Expense not exists" });
     }
 
-    const updatedExpense = await Expenses.updateOne(
-      { _id: id },
-      { $set: req.body }
-    );
+    await Expenses.updateOne({ _id: id }, { $set: data });
+
+    const updatedExpense = await Expenses.findOne({ _id: id })
+
     return res
       .status(200)
       .json({ success: false, message: "Expense updated successfully", data: updatedExpense });
@@ -109,3 +111,108 @@ export const deleteExpense = async (req, res) => {
     return res.status(500).json({ success: false, message: error?.message });
   }
 };
+
+export const totalExpense = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User Id is required" });
+  }
+
+  const expensesSummary = await Expenses.aggregate([
+    {
+      $match: { userId: new Types.ObjectId(userId) }
+    },
+    {
+      $group: {
+        _id: "$userId",
+        totalAmount: { $sum: "$amount" },
+        totalExpense: { $count: {} }
+      }
+    }
+  ])
+
+  return res
+    .status(200)
+    .json({ success: true, message: "Success", expensesSummary });
+
+}
+
+export const categoryWiseExpense = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User Id is required" });
+  }
+
+  const categoryWise = await Expenses.aggregate([
+    {
+      $match: { userId: new Types.ObjectId(userId) }
+    },
+    {
+      $group: {
+        _id: "$category",
+        totalSpent: { $sum: "$amount" },
+        averageSpent: { $avg: "$amount" },
+        count: { $count: {} }
+      }
+    },
+    { $sort: { totalSpent: -1 } }
+  ])
+
+  return res
+    .status(200)
+    .json({ success: true, message: "Success", categoryWise });
+}
+
+export const monthlyExpenseReport = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User Id is required" });
+  }
+
+  const monthReport = await Expenses.aggregate([
+    {
+      $match: { userId: new Types.ObjectId(userId) }
+    },
+    {
+      $group: {
+        _id: { month: { $month: "$date" }, year: { $year: "$date" } },
+        totalSpent: { $sum: "$amount" },
+        count: { $count: {} }
+      }
+    },
+    { $sort: { "_id.year": -1, "_id.month": -1 } }
+  ])
+
+  return res
+    .status(200)
+    .json({ success: true, message: "Success", monthReport });
+}
+
+export const calculateMaxExpense = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User Id is required" });
+  }
+
+  const maxExpense = await Expenses.aggregate([
+    { $match: { userId: new Types.ObjectId(userId) } },
+    { $sort: { amount: -1 } },
+    { $limit: 1 }
+  ])
+
+  return res
+    .status(200)
+    .json({ success: true, message: "Success", maxExpense });
+}
