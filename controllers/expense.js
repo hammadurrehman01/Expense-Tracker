@@ -21,7 +21,7 @@ export const createExpense = async (req, res) => {
 
 export const getAllExpenses = async (req, res) => {
   try {
-    const expenses = await Expenses.find();
+    const expenses = await Expenses.find().lean()
 
     return res
       .status(201)
@@ -33,9 +33,13 @@ export const getAllExpenses = async (req, res) => {
 
 export const getExpenseByFilter = async (req, res) => {
   try {
-    const { userId, title, category, date, note } = req.query;
+    const { userId, title, category, date, note, id } = req.query;
 
     let filter = {};
+
+    if (id) {
+      filter._id = id;
+    }
 
     if (userId) {
       filter.userId = userId;
@@ -57,7 +61,7 @@ export const getExpenseByFilter = async (req, res) => {
       filter.note = { $regex: note, $options: "i" };
     }
 
-    const expenses = await Expenses.find(filter);
+    const expenses = await Expenses.find(filter)  
 
     return res
       .status(200)

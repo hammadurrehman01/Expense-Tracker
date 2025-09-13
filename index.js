@@ -3,11 +3,20 @@ import dotenv from "dotenv";
 import { connectDB } from "./db/index.js";
 import authRoute from "./routes/auth.js"
 import expenseRoute from "./routes/expense.js"
+import cors from "cors"
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
+
+app.use(
+  cors({
+    origin: "http://localhost:3000", // your frontend URL
+    credentials: true, // allow cookies / Authorization headers
+  })
+);
+
 
 app.use(express.json());
 app.use("/api/auth", authRoute)

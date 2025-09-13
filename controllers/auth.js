@@ -18,11 +18,17 @@ export const signUp = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await Users.create({ email, name, password: hashedPassword });
+    const user = await Users.create({ email, name, password: hashedPassword });
+
+      const token = jwt.sign(
+      { id: user._id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
 
     return res
       .status(201)
-      .json({ success: false, message: "User created successfully" });
+      .json({ success: true, message: "User created successfully", user, access_token: token });
   } catch (error) {
     return res.status(500).json({ success: false, message: error?.message });
   }
@@ -58,14 +64,12 @@ export const signIn = async (req, res) => {
       { expiresIn: "24h" }
     );
 
-    return res
-      .status(201)
-      .json({
-        success: false,
-        message: "User loggedin successfully",
-        user,
-        token,
-      });
+    return res.status(201).json({
+      success: false,
+      message: "User loggedin successfully",
+      user,
+      token,
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error?.message });
   }
