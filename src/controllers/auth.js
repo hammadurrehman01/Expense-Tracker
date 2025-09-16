@@ -1,13 +1,16 @@
 import { Users } from "../models/user.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { sendConfirmationEmail } from "../services/emailService.js";
 
 export const signUp = async (req, res) => {
   try {
     const { email, name, password } = req.body;
 
     if (!email && !name && !password)
-      return res.json({ success: false, message: "data is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "data is required" });
 
     const existingUser = await Users.findOne({ email });
     if (existingUser) {
@@ -20,15 +23,26 @@ export const signUp = async (req, res) => {
 
     const user = await Users.create({ email, name, password: hashedPassword });
 
-      const token = jwt.sign(
+    const access_token = jwt.sign(
       { id: user._id, name: user.name, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
-    return res
-      .status(201)
-      .json({ success: true, message: "User created successfully", user, access_token: token });
+    const confirmation_token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    await sendConfirmationEmail(user, confirmation_token);
+
+    return res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      user: { id: user._id, name: user.name, email: user.email },
+      access_token,
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error?.message });
   }
