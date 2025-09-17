@@ -40,7 +40,7 @@ export const signUp = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "User created successfully",
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, confirmation_token },
       access_token,
     });
   } catch (error) {
@@ -83,6 +83,27 @@ export const signIn = async (req, res) => {
       message: "User loggedin successfully",
       user,
       token,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error?.message });
+  }
+};
+
+export const resendEmail = async (req, res) => {
+  try {
+    const { user } = req.body;
+    console.log("user", user)
+
+    if (!user)
+      return res
+        .status(400)
+        .json({ success: false, message: "data is required" });
+
+    // await sendConfirmationEmail(user, confirmation_token);
+
+    return res.status(200).json({
+      success: false,
+      message: "Email sent Successfully",
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error?.message });
