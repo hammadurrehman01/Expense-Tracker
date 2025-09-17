@@ -4,7 +4,7 @@ import fs from "fs";
 import { transporter } from "../config/mailer.js";
 
 export const sendConfirmationEmail = async (user, token) => {
-  const confirmationUrl = `${CLIENT_URL}/confirm-email?token=${token}`;
+  const confirmationUrl = `${CLIENT_URL}/verify-email?token=${token}`;
 
   const templatePath = path.resolve("src/templates/confirmEmail.html");
 

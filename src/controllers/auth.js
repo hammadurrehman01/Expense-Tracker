@@ -40,7 +40,12 @@ export const signUp = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "User created successfully",
-      user: { id: user._id, name: user.name, email: user.email, confirmation_token },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        confirmation_token,
+      },
       access_token,
     });
   } catch (error) {
@@ -92,17 +97,16 @@ export const signIn = async (req, res) => {
 export const resendEmail = async (req, res) => {
   try {
     const { user } = req.body;
-    console.log("user", user)
 
     if (!user)
       return res
         .status(400)
         .json({ success: false, message: "data is required" });
 
-    // await sendConfirmationEmail(user, confirmation_token);
+    await sendConfirmationEmail(user, user.confirmation_token);
 
     return res.status(200).json({
-      success: false,
+      success: true,
       message: "Email sent Successfully",
     });
   } catch (error) {
