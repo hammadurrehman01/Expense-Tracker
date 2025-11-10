@@ -35,7 +35,8 @@ export const signUp = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    await sendConfirmationEmail(user, confirmation_token);
+    const confirmationUrl = await sendConfirmationEmail(user, confirmation_token);
+    console.log("confirmationUrl ==>", confirmationUrl)
 
     return res.status(201).json({
       success: true,

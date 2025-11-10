@@ -17,7 +17,6 @@ app.use(
   })
 );
 
-
 app.use(express.json());
 app.use("/api/auth", authRoute)
 app.use("/api", expenseRoute)
@@ -26,3 +25,12 @@ connectDB();
 app.listen(PORT, () => {
   console.log(`Server is listening to the port ${PORT}`);
 });
+
+
+// {
+//  "verbose": true,
+//  "watch": ["src/**/*.js"],
+//  "exec": "./src/index.js",
+//  "pollingInterval": 100,
+//  "legacyWatch": true
+// }
