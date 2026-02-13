@@ -2,6 +2,10 @@ import { Users } from "../models/user.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendConfirmationEmail } from "../services/emailService.js";
+import { OAuth2Client } from "google-auth-library";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 
 export const signUp = async (req, res) => {
   try {
@@ -54,6 +58,45 @@ export const signUp = async (req, res) => {
   }
 };
 
+export const googleSignup = async (req, res) => {
+ try {
+    const { token } = req.body;
+
+    // Verify Google token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { email, name, sub } = payload;
+
+    // Check if user exists
+      const user = await Users.findOne({ email });
+
+    if (!user) {
+      // Signup
+     const user = await Users.create({ email, name });
+    }
+
+    // Create your own JWT
+    const appToken = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "Authentication successful",
+      token: appToken,
+      user,
+    });
+  } catch (err) {
+    res.status(401).json({ error: "Invalid Google token" });
+  }
+}
+
 export const signIn = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -102,7 +145,7 @@ export const resendEmail = async (req, res) => {
     if (!user)
       return res
         .status(400)
-        .json({ success: false, message: "data is required" });
+        .json({ success: false, message: "User not found" });
 
     await sendConfirmationEmail(user, user.confirmation_token);
 
