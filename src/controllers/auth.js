@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendConfirmationEmail } from "../services/emailService.js";
 import { OAuth2Client } from "google-auth-library";
+import axios from "axios";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -24,6 +25,18 @@ export const signUp = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    const response = await axios.get("https://ipwho.is/");
+
+   const country = response.data.country;
+
+   const countryData = await axios.get(`https://restcountries.com/v3.1/name/${country}`);
+
+   const currency = countryData.data[0].currencies;
+
+   console.log("currency ==>", currency);
+   
+
 
     const user = await Users.create({ email, name, password: hashedPassword });
 
@@ -61,6 +74,7 @@ export const signUp = async (req, res) => {
 export const googleSignup = async (req, res) => {
  try {
     const { token } = req.body;
+    console.log("token ==>", token)
 
     // Verify Google token
     const ticket = await client.verifyIdToken({
@@ -68,7 +82,11 @@ export const googleSignup = async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
+    console.log("ticket ==>", ticket)
+
     const payload = ticket.getPayload();
+
+    console.log("payload ==>", payload)
 
     const { email, name, sub } = payload;
 
