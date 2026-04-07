@@ -21,10 +21,24 @@ export const createExpense = async (req, res) => {
 
 export const getAllExpenses = async (req, res) => {
   try {
-    const expenses = await Expenses.find().lean()
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User Id is required" });
+    }
+
+    if (!Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid User Id" });
+    }
+
+    const expenses = await Expenses.find({ userId }).lean();
 
     return res
-      .status(201)
+      .status(200)
       .json({ success: false, message: "Success", expenses });
   } catch (error) {
     return res.status(500).json({ success: false, message: error?.message });

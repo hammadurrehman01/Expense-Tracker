@@ -14,6 +14,14 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
+  currencyCode: {
+    type: String,
+    required: true,
+  },
+  currencySymbol: {
+    type: String,
+    required: true,
+  },
 }, { timestamps: true });
 
 export const Users = model("Users", userSchema);

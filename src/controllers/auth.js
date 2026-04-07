@@ -32,13 +32,16 @@ export const signUp = async (req, res) => {
 
    const countryData = await axios.get(`https://restcountries.com/v3.1/name/${country}`);
 
-   const currency = countryData.data[0].currencies;
+   const currencies = countryData.data[0].currencies;
+   const currencyCode = Object.keys(currencies)[0];
+   const currencySymbol = currencies[currencyCode].symbol;  
 
-   console.log("currency ==>", currency);
+   console.log("currencyCode ==>", currencyCode);
+   console.log("currencySymbol ==>", currencySymbol);
    
 
 
-    const user = await Users.create({ email, name, password: hashedPassword });
+    const user = await Users.create({ email, name, password: hashedPassword, currencyCode, currencySymbol });
 
     const access_token = jwt.sign(
       { id: user._id, name: user.name, email: user.email },
@@ -62,6 +65,8 @@ export const signUp = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        currencyCode: user.currencyCode,
+        currencySymbol: user.currencySymbol,
         confirmation_token,
       },
       access_token,
