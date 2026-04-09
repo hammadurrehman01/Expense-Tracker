@@ -1,6 +1,5 @@
 import { Types } from "mongoose";
 import { Expenses } from "../models/expense.js";
-import req from "express/lib/request.js";
 
 export const createExpense = async (req, res) => {
   try {

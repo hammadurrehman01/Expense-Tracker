@@ -76,7 +76,7 @@ export const signUp = async (req, res) => {
   }
 };
 
-export const googleSignup = async (req, res) => {
+export const googleAuth = async (req, res) => {
  try {
     const { token } = req.body;
     console.log("token ==>", token)
