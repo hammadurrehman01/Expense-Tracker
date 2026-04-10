@@ -20,7 +20,9 @@ export const createExpense = async (req, res) => {
 
 export const getAllExpenses = async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, page = 1 } = req.query;
+    const limit = 10;
+    const currentPage = Number(page);
 
     if (!userId) {
       return res
@@ -34,11 +36,35 @@ export const getAllExpenses = async (req, res) => {
         .json({ success: false, message: "Invalid User Id" });
     }
 
-    const expenses = await Expenses.find({ userId }).lean();
+    if (!Number.isInteger(currentPage) || currentPage < 1) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Page must be a positive integer" });
+    }
+
+    const skip = (currentPage - 1) * limit;
+    const filter = { userId };
+
+    const [expenses, totalExpenses] = await Promise.all([
+      Expenses.find(filter).sort({ date: -1 }).skip(skip).limit(limit).lean(),
+      Expenses.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(totalExpenses / limit);
 
     return res
       .status(200)
-      .json({ success: false, message: "Success", expenses });
+      .json({
+        success: false,
+        message: "Success",
+        expenses,
+        pagination: {
+          page: currentPage,
+          limit,
+          totalExpenses,
+          totalPages,
+        },
+      });
   } catch (error) {
     return res.status(500).json({ success: false, message: error?.message });
   }
