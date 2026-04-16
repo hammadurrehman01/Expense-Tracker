@@ -3,7 +3,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendConfirmationEmail } from "../services/emailService.js";
 import { OAuth2Client } from "google-auth-library";
-import axios from "axios";
 import getCurrency from "../lib/getCurrency.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);

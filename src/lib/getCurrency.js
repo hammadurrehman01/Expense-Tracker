@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const getCurrency = async () => {
     try {
         const response = await axios.get("https://ipwho.is/");
