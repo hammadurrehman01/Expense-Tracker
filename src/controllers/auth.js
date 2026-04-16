@@ -4,41 +4,46 @@ import jwt from "jsonwebtoken";
 import { sendConfirmationEmail } from "../services/emailService.js";
 import { OAuth2Client } from "google-auth-library";
 import axios from "axios";
+import getCurrency from "../lib/getCurrency.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 
-export const signUp = async (req, res) => {
+export const join = async (req, res) => {
   try {
-    const { email, name, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!email && !name && !password)
+    if (!email && !password)
       return res
         .status(400)
         .json({ success: false, message: "data is required" });
 
     const existingUser = await Users.findOne({ email });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ success: false, message: "User already exists" });
+      const passwordMatch = await bcrypt.compare(password, user?.password);
+      if (passwordMatch) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User already exists" });
+      }
+      const token = jwt.sign(
+        { id: user._id, name: user.name, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: "24h" }
+      );
+
+
+      return res.status(201).json({
+        success: false,
+        message: "User loggedin successfully",
+        user,
+        token,
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const response = await axios.get("https://ipwho.is/");
-
-   const country = response.data.country;
-
-   const countryData = await axios.get(`https://restcountries.com/v3.1/name/${country}`);
-
-   const currencies = countryData.data[0].currencies;
-   const currencyCode = Object.keys(currencies)[0];
-   const currencySymbol = currencies[currencyCode].symbol;  
-
-   console.log("currencyCode ==>", currencyCode);
-   console.log("currencySymbol ==>", currencySymbol);
-   
+    const { currencyCode, currencySymbol } = await getCurrency();
 
 
     const user = await Users.create({ email, name, password: hashedPassword, currencyCode, currencySymbol });
@@ -77,7 +82,7 @@ export const signUp = async (req, res) => {
 };
 
 export const googleAuth = async (req, res) => {
- try {
+  try {
     const { token } = req.body;
     console.log("token ==>", token)
 
@@ -96,11 +101,12 @@ export const googleAuth = async (req, res) => {
     const { email, name, sub } = payload;
 
     // Check if user exists
-      const user = await Users.findOne({ email });
+    const user = await Users.findOne({ email });
 
     if (!user) {
-      // Signup
-     const user = await Users.create({ email, name });
+      const { currencyCode, currencySymbol } = await getCurrency();
+
+      await Users.create({ email, name, currencyCode, currencySymbol });
     }
 
     // Create your own JWT
@@ -120,46 +126,46 @@ export const googleAuth = async (req, res) => {
   }
 }
 
-export const signIn = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// export const signIn = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
 
-    if (!email && !password)
-      return res.json({ success: false, message: "data is required" });
+//     if (!email && !password)
+//       return res.json({ success: false, message: "data is required" });
 
-    const user = await Users.findOne({ email });
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "User with this email is not exists",
-      });
-    }
+//     const user = await Users.findOne({ email });
+//     if (!user) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User with this email is not exists",
+//       });
+//     }
 
-    const passwordMatch = await bcrypt.compare(password, user?.password);
+//     const passwordMatch = await bcrypt.compare(password, user?.password);
 
-    if (!passwordMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Incorrect Password",
-      });
-    }
+//     if (!passwordMatch) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Incorrect Password",
+//       });
+//     }
 
-    const token = jwt.sign(
-      { id: user._id, name: user.name, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
+//     const token = jwt.sign(
+//       { id: user._id, name: user.name, email: user.email },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "24h" }
+//     );
 
-    return res.status(201).json({
-      success: false,
-      message: "User loggedin successfully",
-      user,
-      token,
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error?.message });
-  }
-};
+//     return res.status(201).json({
+//       success: false,
+//       message: "User loggedin successfully",
+//       user,
+//       token,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({ success: false, message: error?.message });
+//   }
+// };
 
 export const resendEmail = async (req, res) => {
   try {
@@ -180,3 +186,22 @@ export const resendEmail = async (req, res) => {
     return res.status(500).json({ success: false, message: error?.message });
   }
 };
+
+export const completeProfile = async (req, res) => {
+  try {
+    const { name } = req.body;
+    const user = await Users.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    user.name = name;
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Profile completed successfully",
+      user,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error?.message });
+  }
+}
